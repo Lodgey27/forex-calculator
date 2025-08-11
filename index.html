@@ -1,227 +1,669 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Forex Position Size Calculator</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pro Forex Trade Sizer — All-in-One</title>
+<link rel="icon" href="data:,">
+
+<!--
+  Pro Forex Trade Sizer
+  Single-file app: calculation + trade journal + exports + configurable rates
+  No external API keys required.
+-->
+
 <style>
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    background: #f0f2f5;
-    color: #111;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-    padding: 40px 20px;
-    margin: 0;
+  /* ---------- Reset & base ---------- */
+  :root{
+    --bg:#f6f8fb;
+    --card:#fff;
+    --muted:#6b7280;
+    --accent1:#0ea5e9; /* cyan */
+    --accent2:#7c3aed; /* purple */
+    --glass: rgba(255,255,255,0.7);
+    --radius-lg:18px;
+    --radius-md:10px;
+    --shadow-soft: 0 8px 30px rgba(15,23,42,0.08);
+    --glass-border: rgba(124,58,237,0.12);
   }
-  .container {
-    background: #fff;
-    padding: 30px 40px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgb(0 0 0 / 0.1);
-    max-width: 420px;
-    width: 100%;
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background:
+      linear-gradient(180deg,#eef2ff 0%, #f6fbff 40%),
+      radial-gradient(900px 400px at 10% 10%, rgba(124,58,237,0.06), transparent 10%),
+      radial-gradient(800px 300px at 90% 90%, rgba(14,165,233,0.03), transparent 10%);
+    color:#0f172a;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    padding:32px;
+    display:flex;
+    justify-content:center;
   }
-  h1 {
-    font-weight: 700;
-    font-size: 1.8rem;
-    margin-bottom: 30px;
-    color: #222;
-    text-align: center;
-    letter-spacing: 0.05em;
+
+  /* ---------- Layout ---------- */
+  .shell {
+    width:100%;
+    max-width:1200px;
+    display:grid;
+    grid-template-columns: 1fr 420px;
+    gap:28px;
+    align-items:start;
   }
-  label {
-    font-weight: 600;
-    font-size: 0.9rem;
-    display: block;
-    margin-bottom: 6px;
-    color: #444;
+  @media (max-width:1000px){
+    .shell{grid-template-columns:1fr; padding:0 12px}
   }
-  input[type="number"] {
-    width: 100%;
-    padding: 12px 14px;
-    font-size: 1rem;
-    border-radius: 8px;
-    border: 1.8px solid #ccc;
-    margin-bottom: 22px;
-    transition: border-color 0.3s ease;
-    box-sizing: border-box;
+
+  /* ---------- Main card ---------- */
+  .card {
+    background:var(--card);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-soft);
+    padding:28px;
+    border:1px solid var(--glass-border);
   }
-  input[type="number"]:focus {
-    outline: none;
-    border-color: #2a7de1;
-    box-shadow: 0 0 5px #2a7de1aa;
+  header.app-head {
+    display:flex;
+    gap:16px;
+    align-items:center;
+    margin-bottom:18px;
   }
-  button {
-    width: 100%;
-    padding: 14px;
-    font-weight: 700;
-    font-size: 1.1rem;
-    background: #2a7de1;
-    color: white;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: background 0.25s ease;
-    margin-top: 10px;
-    user-select: none;
+  .logo {
+    width:60px;
+    height:60px;
+    border-radius:12px;
+    background: linear-gradient(135deg,var(--accent2),var(--accent1));
+    display:flex;align-items:center;justify-content:center;color:white;font-weight:700;
+    box-shadow: 0 8px 20px rgba(14,165,233,0.08);
+    flex-shrink:0;
   }
-  button:hover {
-    background: #1d5dbd;
+  h1 {font-size:1.25rem;margin:0}
+  p.lead {margin:0;color:var(--muted);font-size:0.95rem}
+
+  /* ---------- Inputs grid ---------- */
+  .grid2 {
+    display:grid;
+    grid-template-columns: repeat(2,1fr);
+    gap:12px;
+    margin-top:14px;
   }
-  .result {
-    margin-top: 30px;
-    background: #f7f9fc;
-    padding: 22px;
-    border-radius: 14px;
-    font-size: 1rem;
-    line-height: 1.5;
-    box-shadow: inset 0 0 10px #dde4f2;
-    white-space: pre-wrap;
-    color: #222;
+  @media (max-width:640px){ .grid2{grid-template-columns:1fr} }
+
+  label.field {
+    display:block;
+    font-weight:600;
+    font-size:0.92rem;
+    margin-bottom:6px;
+    color:#0f172a;
   }
-  .error {
-    margin-top: 10px;
-    color: #d93025;
-    font-weight: 700;
-    text-align: center;
+  .field-wrap{margin-bottom:14px}
+  input[type="number"], select, .text {
+    width:100%;
+    padding:12px 12px;
+    border-radius:10px;
+    border:1px solid #e6eef8;
+    background:linear-gradient(180deg,#fff,#fcfdff);
+    font-size:1rem;
+    color:#0f172a;
+    outline:none;
+    transition:box-shadow .18s, transform .08s;
   }
+  input[type="number"]:focus, select:focus{
+    box-shadow: 0 8px 30px rgba(14,165,233,0.08);
+    transform: translateY(-1px);
+    border-color: rgba(14,165,233,0.4);
+  }
+
+  .muted {color:var(--muted);font-size:0.92rem}
+
   .actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
+    display:flex;
+    gap:12px;
+    margin-top:8px;
+    flex-wrap:wrap;
   }
-  .actions button {
-    flex: 1;
-    padding: 12px;
-    font-size: 1rem;
+  button.btn {
+    border:0;padding:12px 14px;border-radius:12px;font-weight:700;cursor:pointer;
+    background: linear-gradient(90deg,var(--accent2),var(--accent1));
+    color:white;box-shadow:0 10px 30px rgba(124,58,237,0.12);
+    transition:transform .12s ease, box-shadow .12s;
   }
+  button.btn:active{transform:translateY(1px)}
+  button.ghost {
+    background:transparent;color:var(--accent2);border:1px solid rgba(124,58,237,0.12);
+    box-shadow:none;font-weight:700;
+  }
+
+  /* ---------- Result card ---------- */
+  .result-card {
+    margin-top:20px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(250,250,255,0.7));
+    border-radius:12px;
+    padding:16px;
+    border:1px solid rgba(14,165,233,0.06);
+  }
+  .result-row {display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px dashed rgba(15,23,42,0.04)}
+  .result-row:last-child{border-bottom:none}
+  .result-key {color:#475569;font-weight:700}
+  .result-val {font-weight:800;color:#0f172a}
+
+  /* ---------- Right column - journal & settings ---------- */
+  .side {
+    display:flex;flex-direction:column;gap:18px;
+  }
+  .side .card {padding:18px}
+
+  .journal-list {max-height:360px;overflow:auto;padding:6px;border-radius:10px}
+  .trade-item {
+    display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:10px;
+    background:linear-gradient(180deg,#fff,#fbfdff);
+    margin-bottom:8px;border:1px solid rgba(14,165,233,0.04)
+  }
+  .trade-left {font-weight:700;color:#0f172a}
+  .trade-meta {font-size:0.85rem;color:var(--muted)}
+
+  .small {font-size:0.85rem;color:var(--muted)}
+
+  /* ---------- Settings panel ---------- */
+  .settings {display:flex;flex-direction:column;gap:8px}
+  textarea.rates {width:100%;min-height:90px;padding:10px;border-radius:8px;border:1px solid #e6eef8;resize:vertical}
+
+  /* ---------- Footer tiny ---------- */
+  .tiny {font-size:0.82rem;color:var(--muted);margin-top:8px}
+
+  /* nice scroll */
+  ::-webkit-scrollbar {height:8px;width:8px}
+  ::-webkit-scrollbar-thumb{background:rgba(15,23,42,0.12);border-radius:8px}
 </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Forex Position Size Calculator</h1>
-    <label for="balance">Account Balance (USD):</label>
-    <input type="number" id="balance" placeholder="e.g., 1000" min="0" step="any" />
+  <div class="shell">
 
-    <label for="riskPercent">Risk Percentage (%):</label>
-    <input type="number" id="riskPercent" placeholder="e.g., 2" min="0" step="any" />
+    <!-- =========== LEFT: Main App =========== -->
+    <section class="card" aria-labelledby="title">
+      <header class="app-head">
+        <div class="logo">FX</div>
+        <div>
+          <h1 id="title">Pro Forex Trade Sizer</h1>
+          <p class="lead">Calculate precise position sizes, save trades, export data — no API keys required.</p>
+        </div>
+      </header>
 
-    <label for="stopLossPips">Stop Loss (pips):</label>
-    <input type="number" id="stopLossPips" placeholder="e.g., 30" min="0" step="any" />
+      <form id="calcForm" onsubmit="return false" aria-describedby="formdesc">
+        <div id="formdesc" class="tiny">Fill required fields and press <strong>Calculate</strong>.</div>
 
-    <label for="takeProfitPips">Take Profit (pips, optional):</label>
-    <input type="number" id="takeProfitPips" placeholder="Leave blank if none" min="0" step="any" />
+        <div class="grid2" style="margin-top:12px">
+          <div>
+            <label class="field" for="accountCurrency">Account Currency</label>
+            <select id="accountCurrency" aria-label="Account currency">
+              <option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option><option value="JPY">JPY</option>
+              <option value="AUD">AUD</option><option value="CAD">CAD</option><option value="CHF">CHF</option><option value="NZD">NZD</option>
+            </select>
+          </div>
 
-    <label for="pairPrice">Price per pip (USD):</label>
-    <input type="number" id="pairPrice" placeholder="e.g., 0.1" min="0" step="any" />
+          <div>
+            <label class="field" for="pair">Currency Pair</label>
+            <select id="pair" aria-label="Currency pair">
+              <!-- common and cross pairs -->
+              <option value="EURUSD">EUR/USD</option>
+              <option value="GBPUSD">GBP/USD</option>
+              <option value="USDJPY">USD/JPY</option>
+              <option value="AUDUSD">AUD/USD</option>
+              <option value="USDCAD">USD/CAD</option>
+              <option value="USDCHF">USD/CHF</option>
+              <option value="NZDUSD">NZD/USD</option>
+              <option value="EURGBP">EUR/GBP</option>
+              <option value="EURJPY">EUR/JPY</option>
+              <option value="GBPJPY">GBP/JPY</option>
+              <option value="AUDJPY">AUD/JPY</option>
+              <option value="GBPCHF">GBP/CHF</option>
+              <option value="USDSGD">USD/SGD</option>
+              <option value="EURCAD">EUR/CAD</option>
+            </select>
+          </div>
+        </div>
 
-    <button id="calculateBtn">Calculate</button>
+        <div class="grid2">
+          <div>
+            <label class="field" for="balance">Account Balance</label>
+            <input id="balance" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 10000" required />
+          </div>
+          <div>
+            <label class="field" for="riskPercent">Risk % per trade</label>
+            <input id="riskPercent" type="number" inputmode="decimal" min="0.01" max="100" step="any" placeholder="e.g. 1" required />
+          </div>
+        </div>
 
-    <div id="error" class="error"></div>
+        <div class="grid2">
+          <div>
+            <label class="field" for="stopLoss">Stop Loss (pips)</label>
+            <input id="stopLoss" type="number" inputmode="decimal" min="0.1" step="any" placeholder="e.g. 25" required />
+          </div>
+          <div>
+            <label class="field" for="takeProfit">Take Profit (pips) (optional)</label>
+            <input id="takeProfit" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 50 (or leave blank)" />
+          </div>
+        </div>
 
-    <pre id="result" class="result" style="display:none;"></pre>
+        <div class="grid2">
+          <div>
+            <label class="field" for="leverage">Leverage (optional)</label>
+            <input id="leverage" type="number" min="1" step="1" placeholder="e.g. 100 (leave blank for no leverage)" />
+          </div>
+          <div>
+            <label class="field" for="slippage">Slippage (pips) (optional)</label>
+            <input id="slippage" type="number" min="0" step="any" placeholder="e.g. 0.5" />
+          </div>
+        </div>
 
-    <div class="actions" style="display:none;" id="actionButtons">
-      <button id="downloadPdfBtn">Download PDF</button>
-      <button id="emailResultBtn">Email Result</button>
-    </div>
+        <div class="field-wrap">
+          <label class="field">Account <span class="small muted">balance handling</span></label>
+          <div class="muted small">Tip: Balance is in the Account Currency you selected. Pip values adjust automatically for pair.</div>
+        </div>
+
+        <div class="actions">
+          <button id="calcBtn" class="btn" type="button" onclick="runCalc()">Calculate</button>
+          <button id="saveTradeBtn" class="ghost" type="button" onclick="saveTrade()" title="Save calculation to local journal">Save trade</button>
+          <button id="clearHistory" class="ghost" type="button" onclick="clearHistory()" title="Clear stored journal">Clear journal</button>
+        </div>
+
+        <div id="resultArea" class="result-card" style="display:none" role="region" aria-live="polite">
+          <div class="result-row"><div class="result-key">Lot Size (Standard)</div><div class="result-val" id="resLot">-</div></div>
+          <div class="result-row"><div class="result-key">Mini / Micro</div><div class="result-val" id="resMiniMicro">-</div></div>
+          <div class="result-row"><div class="result-key">Risk Amount</div><div class="result-val" id="resRisk">-</div></div>
+          <div class="result-row"><div class="result-key">Pip Value</div><div class="result-val" id="resPip">-</div></div>
+          <div class="result-row"><div class="result-key">Potential Profit</div><div class="result-val" id="resProfit">-</div></div>
+          <div class="result-row"><div class="result-key">Risk:Reward</div><div class="result-val" id="resRR">-</div></div>
+
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="ghost" onclick="copyResults()">Copy</button>
+            <button class="ghost" onclick="emailResults()">Email</button>
+            <button class="ghost" onclick="downloadPDF()">PDF</button>
+          </div>
+        </div>
+
+      </form>
+      <div class="tiny">Built-in demo FX rates are editable in Settings (right column). All calculations are client-side only.</div>
+    </section>
+
+    <!-- =========== RIGHT: Journal & Settings =========== -->
+    <aside class="side">
+      <div class="card">
+        <h3 style="margin:0 0 8px 0">Trade Journal</h3>
+        <div class="tiny muted">Saved locally in your browser. You can export CSV.</div>
+        <div class="journal-list" id="journalList" aria-live="polite" style="margin-top:12px"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn" onclick="exportCSV()">Export CSV</button>
+          <button class="ghost" onclick="downloadJournalPDF()">Export PDF</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px 0">Settings</h3>
+        <div class="tiny muted">Paste your latest FX rates as JSON (example below). These are used for currency conversion/pip value estimates.</div>
+        <textarea id="ratesArea" class="rates" aria-label="FX rates JSON (editable)"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" onclick="loadRatesFromTextarea()">Load Rates</button>
+          <button class="ghost" onclick="resetRates()">Reset Rates</button>
+        </div>
+        <div style="margin-top:10px" class="small muted">Example format:<pre style="font-size:0.85rem;margin:6px 0;padding:6px;background:#fbfbff;border-radius:6px">{ "USD":1, "EUR":0.92, "JPY":134.5 }</pre></div>
+      </div>
+
+      <div class="card">
+        <h4 style="margin:0 0 8px 0">Advanced</h4>
+        <div class="tiny muted">Precision & storage controls</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="ghost" onclick="setPrecision(4)">Precision 4</button>
+          <button class="ghost" onclick="setPrecision(6)">Precision 6</button>
+        </div>
+        <div style="margin-top:10px">
+          <button class="ghost" onclick="downloadSource()">Download HTML</button>
+        </div>
+      </div>
+    </aside>
   </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-  const calculateBtn = document.getElementById('calculateBtn');
-  const errorEl = document.getElementById('error');
-  const resultEl = document.getElementById('result');
-  const downloadPdfBtn = document.getElementById('downloadPdfBtn');
-  const emailResultBtn = document.getElementById('emailResultBtn');
-  const actionButtons = document.getElementById('actionButtons');
+/* ===========================
+   Pro Forex Trade Sizer JS
+   - No external API keys
+   - All client-side
+   =========================== */
 
-  function validateInputs(balance, riskPercent, stopLoss, pairPrice) {
-    if (balance <= 0) return 'Please enter a valid account balance.';
-    if (riskPercent <= 0 || riskPercent > 100) return 'Risk percentage must be between 0 and 100.';
-    if (stopLoss <= 0) return 'Please enter a valid stop loss in pips.';
-    if (pairPrice <= 0) return 'Please enter a valid price per pip.';
-    return '';
+const DEFAULT_RATES = {
+  USD:1, EUR:0.92, GBP:0.79, JPY:134.5, AUD:1.46, CAD:1.34, CHF:0.92, NZD:1.56, SGD:1.35
+};
+
+let fxRates = Object.assign({}, DEFAULT_RATES);
+let displayPrecision = 4;
+
+/* ---------- Utility functions ---------- */
+const $ = id => document.getElementById(id);
+function fmt(num, prec=displayPrecision){ return Number(num).toFixed(prec); }
+function isJPYPair(pair){ return pair.toUpperCase().endsWith('JPY'); }
+
+/* ---------- Pip value calculation ----------
+   We won't call live APIs. Instead we use fxRates to estimate pip value in USD,
+   then convert to account currency using rates (user can paste realistic rates).
+   Standard forex pip conventions:
+     - For most pairs: pip = 0.0001 of quote currency
+     - For JPY pairs: pip = 0.01
+   Pip value per 1 standard lot (100,000 units) in USD approximations:
+     pipValueUSD = pipInQuoteCurrency * 100000 * (quoteCurrency->USD)
+   Where "quoteCurrency->USD" is derived from fxRates (USD base).
+*/
+function estimatePipValueUSD(pair){
+  // pair e.g., EURUSD, GBPJPY (6 chars) or USDJPY (6)
+  pair = pair.toUpperCase();
+  if(pair.length !== 6) return 10; // fallback
+  const base = pair.slice(0,3);
+  const quote = pair.slice(3,6);
+  const pipSize = isJPYPair(pair) ? 0.01 : 0.0001;
+
+  // fxRates: maps currency -> units per USD? Our DEFAULT_RATES are 1 USD equals X units: actually earlier we set USD:1,
+  // DEFAULT_RATES used here: treat fxRates as USD -> currency (i.e., 1 USD = fxRates[currency]).
+  // To convert quote currency to USD: 1 quote = (1 / fxRates[quote]) USD.
+  const quoteToUSD = fxRates[quote] ? (1 / fxRates[quote]) : 1; // if fxRates[quote]=134.5 (JPY per USD), then 1 JPY = 1/134.5 USD
+  // pip value for 1 standard lot in USD:
+  const pipValueUSD = pipSize * 100000 * quoteToUSD;
+  return pipValueUSD;
+}
+
+/* ---------- Calculation logic ---------- */
+function runCalc(){
+  // read inputs
+  const accountCurrency = $('accountCurrency').value;
+  const pair = $('pair').value;
+  const balanceRaw = Number($('balance').value);
+  const riskPercent = Number($('riskPercent').value);
+  const stopLoss = Number($('stopLoss').value);
+  const takeProfitRaw = $('takeProfit').value.trim();
+  const slippage = Number($('slippage').value) || 0;
+  const leverageRaw = Number($('leverage').value) || null;
+
+  // validation
+  const errEl = $('error'); errEl.textContent = '';
+  if(!balanceRaw || balanceRaw <= 0){ errEl.textContent = 'Enter a positive account balance.'; return; }
+  if(!riskPercent || riskPercent <= 0){ errEl.textContent = 'Enter a positive risk percent.'; return; }
+  if(!stopLoss || stopLoss <= 0){ errEl.textContent = 'Enter a positive stop loss (pips).'; return; }
+
+  const takeProfit = (takeProfitRaw === '') ? null : Number(takeProfitRaw);
+  if(takeProfitRaw !== '' && (isNaN(takeProfit) || takeProfit < 0)){ errEl.textContent = 'Invalid take profit value.'; return; }
+
+  // pip value calculation
+  const pipValueUSD = estimatePipValueUSD(pair); // USD per pip for 1 standard lot
+  // convert pip value into account currency:
+  const accRate = fxRates[accountCurrency] ? fxRates[accountCurrency] : 1;
+  // fxRates as earlier: 1 USD = fxRates[CUR], so to convert USD amount to account currency: amount * fxRates[accountCurrency]
+  const pipValueAccount = pipValueUSD * accRate;
+
+  // risk amount in account currency
+  const riskAmount = balanceRaw * (riskPercent / 100);
+
+  // include slippage: effective stoploss = stopLoss + slippage
+  const effectiveStop = stopLoss + (slippage || 0);
+
+  // lot size (standard lots):
+  // lotSize = riskAmount / (effectiveStop * pipValueAccount)
+  let lotSize = riskAmount / (effectiveStop * pipValueAccount);
+  // if user entered leverage, optional: cap position by margin rough estimate
+  if(leverageRaw && leverageRaw > 0){
+    // approximate margin requirement for 1 standard lot in account currency:
+    // approximate notional of 1 lot in USD = 100,000 * (base/quote depending) -> we simplify: use 100,000 USD notional then convert
+    const notionalUSD = 100000;
+    const notionalAccount = notionalUSD * accRate;
+    // margin per 1 lot = notionalAccount / leverage
+    const marginPerLot = notionalAccount / leverageRaw;
+    // maximum lots by balance would be balance / marginPerLot
+    const maxLotsByMargin = balanceRaw / marginPerLot;
+    if(maxLotsByMargin < lotSize) {
+      // Don't silently reduce; show a note: but for calculation, we cap
+      lotSize = Math.min(lotSize, maxLotsByMargin);
+    }
   }
 
-  function calculatePositionSize(balance, riskPercent, stopLoss, pairPrice) {
-    // Formula: Position Size = (Balance * Risk%) / (Stop Loss * Price per pip)
-    return (balance * (riskPercent / 100)) / (stopLoss * pairPrice);
+  // mini & micro
+  const mini = lotSize * 10;
+  const micro = lotSize * 100;
+
+  // potential profit (account currency) if takeProfit provided
+  let potentialProfit = null;
+  if(takeProfit !== null && !isNaN(takeProfit)){
+    // profit = lotSize * takeProfit * pipValueAccount
+    potentialProfit = lotSize * takeProfit * pipValueAccount;
   }
 
-  function calculatePotentialProfit(positionSize, takeProfit, pairPrice) {
-    // Profit = Position Size * Take Profit * Price per pip
-    return positionSize * takeProfit * pairPrice;
+  // risk-reward:
+  let rr = '-';
+  if(potentialProfit !== null) rr = (potentialProfit / riskAmount).toFixed(3);
+
+  // prepare result display
+  $('resLot').textContent = `${fmt(lotSize)} lots`;
+  $('resMiniMicro').textContent = `${fmt(mini)} / ${fmt(micro)}`;
+  $('resRisk').textContent = `${currencyFmt(riskAmount, accountCurrency)}`;
+  $('resPip').textContent = `${currencyFmt(pipValueAccount, accountCurrency)} / pip (1 lot)`;
+  $('resProfit').textContent = potentialProfit !== null ? currencyFmt(potentialProfit, accountCurrency) : 'N/A';
+  $('resRR').textContent = rr === '-' ? 'N/A' : `${rr} : 1`;
+
+  // Show result area
+  $('resultArea').style.display = 'block';
+
+  // store last calculation object for export/buttons
+  window.lastCalc = {
+    timestamp: new Date().toISOString(),
+    accountCurrency, pair, balance: balanceRaw, riskPercent, stopLoss, slippage, leverage: leverageRaw,
+    lotSize, mini, micro, riskAmount, pipValueAccount, potentialProfit, rr,
+  };
+}
+
+/* ---------- formatting helpers ---------- */
+function currencyFmt(amount, currency){
+  currency = currency || 'USD';
+  // For JPY show no decimals
+  const options = { style:'currency', currency, minimumFractionDigits: (currency==='JPY'?0:2) };
+  try { return new Intl.NumberFormat('en-US', options).format(amount); }
+  catch(e){ // fallback plain formatting
+    return (currency==='JPY') ? `${amount.toFixed(0)} ${currency}` : `${amount.toFixed(2)} ${currency}`;
   }
+}
 
-  calculateBtn.addEventListener('click', () => {
-    errorEl.textContent = '';
-    resultEl.style.display = 'none';
-    actionButtons.style.display = 'none';
-
-    const balance = parseFloat(document.getElementById('balance').value);
-    const riskPercent = parseFloat(document.getElementById('riskPercent').value);
-    const stopLoss = parseFloat(document.getElementById('stopLossPips').value);
-    const takeProfitInput = document.getElementById('takeProfitPips').value;
-    const pairPrice = parseFloat(document.getElementById('pairPrice').value);
-
-    const validationError = validateInputs(balance, riskPercent, stopLoss, pairPrice);
-    if (validationError) {
-      errorEl.textContent = validationError;
-      return;
-    }
-
-    const takeProfit = takeProfitInput === '' ? null : parseFloat(takeProfitInput);
-    if (takeProfitInput !== '' && (isNaN(takeProfit) || takeProfit <= 0)) {
-      errorEl.textContent = 'Please enter a valid take profit value or leave it blank.';
-      return;
-    }
-
-    const positionSize = calculatePositionSize(balance, riskPercent, stopLoss, pairPrice);
-    let output = `Position Size: ${positionSize.toFixed(4)} lots\n`;
-
-    if (takeProfit !== null) {
-      const potentialProfit = calculatePotentialProfit(positionSize, takeProfit, pairPrice);
-      output += `Potential Profit: $${potentialProfit.toFixed(2)}`;
-    } else {
-      output += `Potential Profit: N/A (no take profit set)`;
-    }
-
-    resultEl.textContent = output;
-    resultEl.style.display = 'block';
-    actionButtons.style.display = 'flex';
+/* ---------- Save trade journal (localStorage) ---------- */
+function loadJournal(){
+  try {
+    const raw = localStorage.getItem('fx_journal_v1');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e){
+    console.warn('journal load error',e); return [];
+  }
+}
+function saveJournal(arr){
+  localStorage.setItem('fx_journal_v1', JSON.stringify(arr));
+  renderJournal();
+}
+function renderJournal(){
+  const list = loadJournal();
+  const container = $('journalList');
+  container.innerHTML = '';
+  if(list.length === 0){ container.innerHTML = '<div class="small muted">No saved trades yet.</div>'; return; }
+  // newest first
+  list.slice().reverse().forEach((t,idx)=>{
+    const el = document.createElement('div'); el.className='trade-item';
+    el.innerHTML = `<div>
+                      <div class="trade-left">${t.pair} • ${fmt(t.lotSize)}</div>
+                      <div class="trade-meta small">${t.accountCurrency} • ${new Date(t.timestamp).toLocaleString()}</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div class="small muted">${currencyDisplay(t.riskAmount,t.accountCurrency)}</div>
+                      <div style="margin-top:8px"><button class="ghost" onclick="deleteTrade(${t.timestamp})">Delete</button></div>
+                    </div>`;
+    container.appendChild(el);
   });
+}
+function currencyDisplay(amount, currency){ return `${currency} ${Number(amount).toFixed(2)}`; }
 
-  // PDF Generation
-  downloadPdfBtn.addEventListener('click', () => {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+function saveTrade(){
+  if(!window.lastCalc){ alert('No calculation yet. Press Calculate first.'); return; }
+  const journal = loadJournal();
+  journal.push(window.lastCalc);
+  saveJournal(journal);
+  alert('Saved trade to local journal.');
+}
+function deleteTrade(ts){
+  let journal = loadJournal();
+  journal = journal.filter(t=>t.timestamp !== ts);
+  saveJournal(journal);
+}
+function clearHistory(){
+  if(!confirm('Clear all saved trades? This cannot be undone.')) return;
+  localStorage.removeItem('fx_journal_v1');
+  renderJournal();
+  alert('Journal cleared.');
+}
 
-    const title = 'Forex Position Size Calculator Result';
-    const text = resultEl.textContent;
+/* ---------- Exports ---------- */
+function exportCSV(){
+  const journal = loadJournal();
+  if(journal.length === 0){ alert('No saved trades to export.'); return; }
+  const headers = ['timestamp','accountCurrency','pair','balance','riskPercent','stopLoss','slippage','leverage','lotSize','mini','micro','riskAmount','pipValueAccount','potentialProfit','rr'];
+  const rows = journal.map(j => headers.map(h => (j[h] === null || j[h] === undefined) ? '' : (''+j[h].toString().replace(/\n/g,' '))));
+  const csv = [headers.join(',')].concat(rows.map(r=>r.join(','))).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'fx_journal.csv'; a.click(); URL.revokeObjectURL(url);
+}
 
-    doc.setFontSize(20);
-    doc.setTextColor('#2a7de1');
-    doc.text(title, 10, 20);
+function downloadPDF(){
+  if(!window.lastCalc){ alert('No calculation to export.'); return; }
+  // simple styled PDF using jsPDF
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt', format:'a4'});
+  const title = 'Forex Trade Sizer — Calculation';
+  doc.setFontSize(18);
+  doc.setTextColor(45, 53, 71);
+  doc.text(title, 40, 60);
 
-    doc.setFontSize(14);
-    doc.setTextColor('#111');
-    doc.text(text, 10, 40);
+  doc.setFontSize(12);
+  let y = 90;
+  const lc = window.lastCalc;
+  const lines = [
+    `Date: ${new Date(lc.timestamp).toLocaleString()}`,
+    `Account Currency: ${lc.accountCurrency}`,
+    `Pair: ${lc.pair}`,
+    `Account Balance: ${lc.balance}`,
+    `Risk %: ${lc.riskPercent}`,
+    `Stop Loss (pips): ${lc.stopLoss}`,
+    `Slippage (pips): ${lc.slippage || 0}`,
+    `Leverage: ${lc.leverage || 'N/A'}`,
+    `Lot Size (standard): ${fmt(lc.lotSize)}`,
+    `Mini / Micro: ${fmt(lc.mini)} / ${fmt(lc.micro)}`,
+    `Risk Amount: ${lc.riskAmount.toFixed(2)} ${lc.accountCurrency}`,
+    `Pip Value (acct curr): ${lc.pipValueAccount.toFixed(4)} ${lc.accountCurrency}`,
+    `Potential Profit: ${lc.potentialProfit !== null ? lc.potentialProfit.toFixed(2) : 'N/A'}`,
+    `Risk:Reward: ${lc.rr !== undefined ? (lc.rr==='-'? 'N/A' : lc.rr + ' : 1') : 'N/A'}`
+  ];
+  lines.forEach(line => { doc.text(line, 40, y); y += 18; });
 
-    doc.save('forex_calculator_result.pdf');
+  doc.save('fx_calculation.pdf');
+}
+
+function downloadJournalPDF(){
+  const journal = loadJournal();
+  if(journal.length === 0){ alert('No saved trades.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt', format:'a4'});
+  doc.setFontSize(18);
+  doc.text('FX Trade Journal', 40, 60);
+  doc.setFontSize(11);
+  let y = 90;
+  journal.slice().reverse().forEach((t,idx)=>{
+    const line = `${new Date(t.timestamp).toLocaleString()} • ${t.pair} • ${fmt(t.lotSize)} lots • ${currencyFmt(t.riskAmount,t.accountCurrency)}`;
+    doc.text(line, 40, y); y+=16;
+    if(y>760){ doc.addPage(); y=40; }
   });
+  doc.save('fx_journal.pdf');
+}
 
-  // Email Result Button
-  emailResultBtn.addEventListener('click', () => {
-    const subject = encodeURIComponent('Forex Position Size Calculator Result');
-    const body = encodeURIComponent(resultEl.textContent);
-    const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
-    window.location.href = mailtoLink;
-  });
+/* ---------- email & copy ---------- */
+function copyResults(){
+  if(!window.lastCalc){ alert('No result to copy'); return; }
+  const txt = composeResultText(window.lastCalc);
+  navigator.clipboard.writeText(txt).then(()=> alert('Results copied to clipboard.'));
+}
+function emailResults(){
+  if(!window.lastCalc){ alert('No result to email'); return; }
+  const subject = encodeURIComponent('Forex Calculation Result');
+  const body = encodeURIComponent(composeResultText(window.lastCalc));
+  const mailto = `mailto:?subject=${subject}&body=${body}`;
+  // Try to open mail client; use window.open to avoid being blocked in some contexts
+  const opened = window.open(mailto);
+  if(!opened) { // fallback
+    const a = document.createElement('a'); a.href = mailto; a.click();
+  }
+}
+function composeResultText(calc){
+  return `Forex Calculation (${new Date(calc.timestamp).toLocaleString()}):
+Pair: ${calc.pair}
+Account Currency: ${calc.accountCurrency}
+Balance: ${calc.balance}
+Risk %: ${calc.riskPercent}
+Stop Loss: ${calc.stopLoss} pips
+Lot Size (standard): ${fmt(calc.lotSize)} lots
+Mini / Micro: ${fmt(calc.mini)} / ${fmt(calc.micro)}
+Risk Amount: ${currencyFmt(calc.riskAmount,calc.accountCurrency)}
+Pip Value: ${currencyFmt(calc.pipValueAccount,calc.accountCurrency)} per pip
+Potential Profit: ${calc.potentialProfit !== null ? currencyFmt(calc.potentialProfit,calc.accountCurrency) : 'N/A'}
+Risk:Reward: ${calc.rr !== '-' ? calc.rr + ' : 1' : 'N/A'}
+`;
+}
+
+/* ---------- Settings / Rates ---------- */
+function loadRatesFromTextarea(){
+  const val = $('ratesArea').value.trim();
+  if(!val){ alert('Paste JSON rates in textarea first (see example).'); return; }
+  try{
+    const data = JSON.parse(val);
+    // Validate keys and numbers
+    for(const k in data){ if(isNaN(Number(data[k]))){ alert('Rates must be numbers.'); return; } }
+    fxRates = Object.assign({}, DEFAULT_RATES, data);
+    alert('Rates loaded.');
+    $('ratesArea').value = JSON.stringify(fxRates, null, 2);
+  }catch(e){
+    alert('Invalid JSON. Please follow the example format.');
+  }
+}
+function resetRates(){
+  fxRates = Object.assign({}, DEFAULT_RATES);
+  $('ratesArea').value = JSON.stringify(fxRates, null, 2);
+  alert('Rates reset to defaults.');
+}
+
+function setPrecision(p){ displayPrecision = p; alert('Precision set to '+p); }
+
+/* ---------- misc ---------- */
+function downloadSource(){ // download the current HTML source
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'forex_sizer.html'; a.click(); URL.revokeObjectURL(url);
+}
+
+/* ---------- init ---------- */
+function init(){
+  // populate rates textarea with defaults
+  $('ratesArea').value = JSON.stringify(fxRates, null, 2);
+  renderJournal();
+  // If there is a saved last calc in sessionStorage, restore
+  const saved = sessionStorage.getItem('fx_last_calc');
+  if(saved){ window.lastCalc = JSON.parse(saved); $('resultArea').style.display = 'block'; }
+}
+window.addEventListener('beforeunload', ()=> { if(window.lastCalc) sessionStorage.setItem('fx_last_calc', JSON.stringify(window.lastCalc)); });
+
+init();
 </script>
+
+<!-- jsPDF included CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
