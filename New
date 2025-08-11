@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Forex Position Size Calculator</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    background: #f0f2f5;
+    color: #111;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+    margin: 0;
+  }
+  .container {
+    background: #fff;
+    padding: 30px 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.1);
+    max-width: 420px;
+    width: 100%;
+  }
+  h1 {
+    font-weight: 700;
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+    color: #222;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 6px;
+    color: #444;
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1.8px solid #ccc;
+    margin-bottom: 22px;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+  }
+  input[type="number"]:focus {
+    outline: none;
+    border-color: #2a7de1;
+    box-shadow: 0 0 5px #2a7de1aa;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    background: #2a7de1;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.25s ease;
+    margin-top: 10px;
+    user-select: none;
+  }
+  button:hover {
+    background: #1d5dbd;
+  }
+  .result {
+    margin-top: 30px;
+    background: #f7f9fc;
+    padding: 22px;
+    border-radius: 14px;
+    font-size: 1rem;
+    line-height: 1.5;
+    box-shadow: inset 0 0 10px #dde4f2;
+    white-space: pre-wrap;
+    color: #222;
+  }
+  .error {
+    margin-top: 10px;
+    color: #d93025;
+    font-weight: 700;
+    text-align: center;
+  }
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .actions button {
+    flex: 1;
+    padding: 12px;
+    font-size: 1rem;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Forex Position Size Calculator</h1>
+    <label for="balance">Account Balance (USD):</label>
+    <input type="number" id="balance" placeholder="e.g., 1000" min="0" step="any" />
+
+    <label for="riskPercent">Risk Percentage (%):</label>
+    <input type="number" id="riskPercent" placeholder="e.g., 2" min="0" step="any" />
+
+    <label for="stopLossPips">Stop Loss (pips):</label>
+    <input type="number" id="stopLossPips" placeholder="e.g., 30" min="0" step="any" />
+
+    <label for="takeProfitPips">Take Profit (pips, optional):</label>
+    <input type="number" id="takeProfitPips" placeholder="Leave blank if none" min="0" step="any" />
+
+    <label for="pairPrice">Price per pip (USD):</label>
+    <input type="number" id="pairPrice" placeholder="e.g., 0.1" min="0" step="any" />
+
+    <button id="calculateBtn">Calculate</button>
+
+    <div id="error" class="error"></div>
+
+    <pre id="result" class="result" style="display:none;"></pre>
+
+    <div class="actions" style="display:none;" id="actionButtons">
+      <button id="downloadPdfBtn">Download PDF</button>
+      <button id="emailResultBtn">Email Result</button>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  const calculateBtn = document.getElementById('calculateBtn');
+  const errorEl = document.getElementById('error');
+  const resultEl = document.getElementById('result');
+  const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+  const emailResultBtn = document.getElementById('emailResultBtn');
+  const actionButtons = document.getElementById('actionButtons');
+
+  function validateInputs(balance, riskPercent, stopLoss, pairPrice) {
+    if (balance <= 0) return 'Please enter a valid account balance.';
+    if (riskPercent <= 0 || riskPercent > 100) return 'Risk percentage must be between 0 and 100.';
+    if (stopLoss <= 0) return 'Please enter a valid stop loss in pips.';
+    if (pairPrice <= 0) return 'Please enter a valid price per pip.';
+    return '';
+  }
+
+  function calculatePositionSize(balance, riskPercent, stopLoss, pairPrice) {
+    // Formula: Position Size = (Balance * Risk%) / (Stop Loss * Price per pip)
+    return (balance * (riskPercent / 100)) / (stopLoss * pairPrice);
+  }
+
+  function calculatePotentialProfit(positionSize, takeProfit, pairPrice) {
+    // Profit = Position Size * Take Profit * Price per pip
+    return positionSize * takeProfit * pairPrice;
+  }
+
+  calculateBtn.addEventListener('click', () => {
+    errorEl.textContent = '';
+    resultEl.style.display = 'none';
+    actionButtons.style.display = 'none';
+
+    const balance = parseFloat(document.getElementById('balance').value);
+    const riskPercent = parseFloat(document.getElementById('riskPercent').value);
+    const stopLoss = parseFloat(document.getElementById('stopLossPips').value);
+    const takeProfitInput = document.getElementById('takeProfitPips').value;
+    const pairPrice = parseFloat(document.getElementById('pairPrice').value);
+
+    const validationError = validateInputs(balance, riskPercent, stopLoss, pairPrice);
+    if (validationError) {
+      errorEl.textContent = validationError;
+      return;
+    }
+
+    const takeProfit = takeProfitInput === '' ? null : parseFloat(takeProfitInput);
+    if (takeProfitInput !== '' && (isNaN(takeProfit) || takeProfit <= 0)) {
+      errorEl.textContent = 'Please enter a valid take profit value or leave it blank.';
+      return;
+    }
+
+    const positionSize = calculatePositionSize(balance, riskPercent, stopLoss, pairPrice);
+    let output = `Position Size: ${positionSize.toFixed(4)} lots\n`;
+
+    if (takeProfit !== null) {
+      const potentialProfit = calculatePotentialProfit(positionSize, takeProfit, pairPrice);
+      output += `Potential Profit: $${potentialProfit.toFixed(2)}`;
+    } else {
+      output += `Potential Profit: N/A (no take profit set)`;
+    }
+
+    resultEl.textContent = output;
+    resultEl.style.display = 'block';
+    actionButtons.style.display = 'flex';
+  });
+
+  // PDF Generation
+  downloadPdfBtn.addEventListener('click', () => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const title = 'Forex Position Size Calculator Result';
+    const text = resultEl.textContent;
+
+    doc.setFontSize(20);
+    doc.setTextColor('#2a7de1');
+    doc.text(title, 10, 20);
+
+    doc.setFontSize(14);
+    doc.setTextColor('#111');
+    doc.text(text, 10, 40);
+
+    doc.save('forex_calculator_result.pdf');
+  });
+
+  // Email Result Button
+  emailResultBtn.addEventListener('click', () => {
+    const subject = encodeURIComponent('Forex Position Size Calculator Result');
+    const body = encodeURIComponent(resultEl.textContent);
+    const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
+    window.location.href = mailtoLink;
+  });
+</script>
+</body>
+</html>
